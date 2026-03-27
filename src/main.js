@@ -68,4 +68,7 @@ ui.showMenu()
 
 // Select defaults
 document.querySelector('[data-diff="medium"]').click()
-document.querySelector('[data-lanes="5"]').click()
+document.querySelector('[data-lanes="4"]').click()
+
+// Auto-select demo mode so Play is immediately available
+document.getElementById('btn-demo').click()
