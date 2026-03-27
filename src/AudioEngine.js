@@ -10,8 +10,10 @@ export class AudioEngine {
     this.fftData   = null
     this.histories = FREQ_BANDS.map(() => [])
     this.lastBeat  = new Array(FREQ_BANDS.length).fill(0)  // ms timestamp
-    this.stream    = null
-    this.source    = null
+    this.stream        = null
+    this.source        = null
+    this.demoMode      = false
+    this._lastDemoStep = -1
   }
 
   // ── Init AudioContext (must be called after a user gesture) ──────────────
@@ -24,29 +26,48 @@ export class AudioEngine {
     this.initContext()
     if (this.ctx.state === 'suspended') await this.ctx.resume()
 
+    // Demo mode — skip media capture entirely, use synthetic beats
+    if (type === 'demo') {
+      this.demoMode = true
+      return
+    }
+    this.demoMode = false
+
+    // Guard: media API not available
+    if (!navigator.mediaDevices) {
+      throw new Error('Media devices not available. Use a modern browser on localhost or HTTPS.')
+    }
+
     // Disconnect previous source
     if (this.source) { try { this.source.disconnect() } catch (_) {} }
     if (this.stream) { this.stream.getTracks().forEach(t => t.stop()) }
 
     if (type === 'system') {
+      if (!navigator.mediaDevices.getDisplayMedia) {
+        throw new Error('System audio capture not supported in this browser. Try Chrome on desktop.')
+      }
       try {
-        // getDisplayMedia captures system/tab audio on Chrome
         this.stream = await navigator.mediaDevices.getDisplayMedia({
           audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-          video: true,  // required by some browsers; we discard it
+          video: true,  // required by Chrome; discarded immediately
         })
-        // Drop video track immediately
         this.stream.getVideoTracks().forEach(t => t.stop())
         const audioTracks = this.stream.getAudioTracks()
-        if (!audioTracks.length) throw new Error('No audio in captured stream')
+        if (!audioTracks.length) {
+          throw new Error('No audio track captured. Make sure to check "Share audio" in the dialog.')
+        }
       } catch (err) {
-        throw new Error(`System audio unavailable: ${err.message}`)
+        throw new Error(`System audio: ${err.message}`)
       }
     } else {
       // Microphone
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-      })
+      try {
+        this.stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+        })
+      } catch (err) {
+        throw new Error(`Microphone: ${err.message}`)
+      }
     }
 
     this._connectStream()
@@ -66,6 +87,7 @@ export class AudioEngine {
   // ── Called every game frame ──────────────────────────────────────────────
   // Returns array of 5 booleans: did each band fire a beat this frame?
   getBeats(nowMs, sensitivity, activeLaneCount) {
+    if (this.demoMode) return this._demoBeats(nowMs, activeLaneCount)
     if (!this.analyser) return new Array(FREQ_BANDS.length).fill(false)
 
     this.analyser.getByteFrequencyData(this.fftData)
@@ -90,6 +112,31 @@ export class AudioEngine {
 
       if (beatFired) this.lastBeat[i] = nowMs
       return beatFired
+    })
+  }
+
+  // Synthetic beat generator for demo mode (120 BPM, 16-step pattern)
+  _demoBeats(nowMs, activeLaneCount) {
+    const BEAT_MS = 500  // 120 BPM eighth-notes
+    const PATTERNS = [
+      [1,0,0,0, 1,0,0,0, 1,0,1,0, 0,0,1,0],
+      [0,0,1,0, 0,0,1,0, 0,0,0,1, 1,0,0,0],
+      [0,1,0,0, 0,1,0,1, 0,1,0,0, 0,1,0,0],
+      [0,0,0,1, 1,0,0,0, 0,0,1,0, 0,0,0,1],
+      [1,0,1,0, 0,0,0,0, 1,0,0,1, 0,1,0,0],
+    ]
+    const step    = Math.floor(nowMs / BEAT_MS) % 16
+    const stepped = (step !== this._lastDemoStep)
+    this._lastDemoStep = step
+
+    if (!stepped) return new Array(5).fill(false)
+
+    return PATTERNS.map((pat, i) => {
+      if (i >= activeLaneCount) return false
+      if (!pat[step]) return false
+      if (nowMs - this.lastBeat[i] < MIN_NOTE_GAP) return false
+      this.lastBeat[i] = nowMs
+      return true
     })
   }
 

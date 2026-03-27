@@ -23,6 +23,11 @@ document.getElementById('btn-mic').addEventListener('click', async () => {
   }
 })
 
+document.getElementById('btn-demo').addEventListener('click', async () => {
+  const res = await game.selectAudio('demo')
+  ui.setAudioStatus('Demo mode — synthetic 120 BPM pattern', true)
+})
+
 document.getElementById('btn-system').addEventListener('click', async () => {
   ui.setAudioStatus('Opening system audio picker…', false)
   const res = await game.selectAudio('system')
