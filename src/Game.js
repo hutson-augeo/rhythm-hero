@@ -58,13 +58,21 @@ export class Game {
     this.score.reset()
     this.crowd.reset()
 
+    // Clear any stale callbacks from previous runs, then register fresh ones
+    this.input.clearCallbacks()
     this.input.enable()
     this.input.onHit((lane, ts) => this._handleHit(lane, ts))
     this.input.onActivate(() => this._activateStarPower())
 
-    this.state  = STATE.PLAYING
-    this._lastTs = performance.now()
-    this._raf    = requestAnimationFrame(ts => this._loop(ts))
+    this.state = STATE.PLAYING
+
+    // Delay one rAF so the browser lays out the now-visible canvas before we resize + start
+    cancelAnimationFrame(this._raf)
+    requestAnimationFrame(() => {
+      this.highway.resize()
+      this._lastTs = performance.now()
+      this._raf = requestAnimationFrame(ts => this._loop(ts))
+    })
   }
 
   // ── Main Loop ──────────────────────────────────────────────────────────────
@@ -72,33 +80,28 @@ export class Game {
   _loop(ts) {
     if (this.state !== STATE.PLAYING) return
 
-    const dt = Math.min((ts - this._lastTs) / 1000, 0.05)  // cap at 50ms
-    this._lastTs = ts
+    try {
+      const dt = Math.min((ts - this._lastTs) / 1000, 0.05)
+      this._lastTs = ts
 
-    // 1. Beat detection → spawn notes
-    const beats = this.audio.getBeats(ts, this.config.sensitivity, this.numLanes)
-    this.notes.spawnFromBeats(beats, ts)
+      const beats = this.audio.getBeats(ts, this.config.sensitivity, this.numLanes)
+      this.notes.spawnFromBeats(beats, ts)
 
-    // 2. Update note positions, collect auto-misses
-    const missed = this.notes.update(ts)
-    missed.forEach(() => {
-      this.score.recordMiss()
-      this.audio.playMiss()
-      this._showJudgment(null, 'MISS')
-    })
+      const missed = this.notes.update(ts)
+      missed.forEach(() => {
+        this.score.recordMiss()
+        this.audio.playMiss()
+      })
 
-    // 3. Update score system (star power drain, hit state decay)
-    this.score.update(dt)
+      this.score.update(dt)
 
-    // 4. Update crowd
-    const s = this.score.getState()
-    this.crowd.update(s, dt)
-
-    // 5. Render highway
-    this.highway.render(this.notes.notes, this.numLanes, s, ts)
-
-    // 6. Update HUD
-    this.ui.updateHUD(s)
+      const s = this.score.getState()
+      this.crowd.update(s, dt)
+      this.highway.render(this.notes.notes, this.numLanes, s, ts)
+      this.ui.updateHUD(s)
+    } catch (err) {
+      console.error('Game loop error:', err)
+    }
 
     this._raf = requestAnimationFrame(ts2 => this._loop(ts2))
   }

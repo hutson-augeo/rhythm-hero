@@ -21,8 +21,9 @@ export class InputManager {
     window.removeEventListener('keydown', this._onKey)
   }
 
-  onHit(cb)      { this._hitCbs.push(cb) }
-  onActivate(cb) { this._activateCbs.push(cb) }
+  onHit(cb)        { this._hitCbs.push(cb) }
+  onActivate(cb)   { this._activateCbs.push(cb) }
+  clearCallbacks() { this._hitCbs = []; this._activateCbs = [] }
 
   // ── Register a touch button element for lane i ───────────────────────────
   registerTouchButton(el, lane) {

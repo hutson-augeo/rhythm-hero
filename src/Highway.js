@@ -10,6 +10,8 @@ export class Highway {
     this._ro.observe(canvas)
   }
 
+  resize() { this._resize() }
+
   _resize() {
     const dpr = window.devicePixelRatio || 1
     const w   = this.canvas.offsetWidth
