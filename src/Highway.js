@@ -152,25 +152,6 @@ export class Highway {
       ctx.stroke()
     }
 
-    // Subtle edge glow strips
-    for (let i = 0; i < n; i++) {
-      const color = LANE_COLORS[i]
-      const bx1 = margin + (i / n) * hW
-      const bx2 = margin + ((i + 1) / n) * hW
-      const bcx = (bx1 + bx2) / 2
-
-      const lg = ctx.createLinearGradient(0, vpY, 0, hitY)
-      lg.addColorStop(0, color + '00')
-      lg.addColorStop(1, color + '18')
-
-      ctx.beginPath()
-      ctx.moveTo(vpX, vpY)
-      ctx.lineTo(bx1, hitY)
-      ctx.lineTo(bx2, hitY)
-      ctx.closePath()
-      ctx.fillStyle = lg
-      ctx.fill()
-    }
   }
 
   // ─ Notes ──────────────────────────────────────────────────────────────────

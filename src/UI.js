@@ -109,16 +109,7 @@ export class UI {
     this.overScreen.classList.add('hidden')
     this.gameScreen.classList.remove('hidden')
 
-    // Build lane judgment slots
     this.laneLabels.innerHTML = ''
-    for (let i = 0; i < numLanes; i++) {
-      const slot = document.createElement('div')
-      slot.className = 'judgment-slot'
-      slot.id        = `judge-${i}`
-      slot.style.setProperty('--col', LANE_COLORS[i])
-      this.laneLabels.appendChild(slot)
-    }
-
     this._updateTouchButtons()
   }
 
@@ -139,20 +130,7 @@ export class UI {
   }
 
   showJudgmentText(lane, text, color) {
-    const slot = document.getElementById(`judge-${lane}`)
-    if (!slot) return
-
-    slot.textContent  = text
-    slot.style.color  = color
-    slot.classList.remove('pop')
-    void slot.offsetWidth   // reflow to restart animation
-    slot.classList.add('pop')
-
-    clearTimeout(this._judgmentTimers[lane])
-    this._judgmentTimers[lane] = setTimeout(() => {
-      slot.classList.remove('pop')
-      slot.textContent = ''
-    }, 450)
+    // judgment text removed
   }
 
   showComboBanner(combo, mult) {

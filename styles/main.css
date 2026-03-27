@@ -249,60 +249,6 @@ html, body {
   100% { opacity: 0; transform: translateY(-24px) scale(0.9); }
 }
 
-/* ── Crowd ───────────────────────────────────────────────────────────────── */
-#crowd {
-  position: absolute;
-  bottom: 17%;
-  left: 0; right: 0;
-  height: 52px;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.crowd-fig {
-  position: absolute;
-  bottom: 0;
-  width: 18px;
-  height: 30px;
-  background: rgba(20, 12, 40, 0.9);
-  clip-path: polygon(25% 0%, 75% 0%, 100% 100%, 0% 100%);
-  transform-origin: bottom center;
-  animation: crowd-bob calc(0.9s - var(--energy, 0.2) * 0.5s) ease-in-out infinite;
-  animation-delay: calc(var(--rand, 0) * 0.8s);
-}
-
-.crowd-fig::before {
-  content: '';
-  position: absolute;
-  top: -11px; left: 50%;
-  transform: translateX(-50%);
-  width: 12px; height: 12px;
-  background: rgba(30, 18, 55, 0.95);
-  border-radius: 50%;
-}
-
-/* Arms raised at higher energy */
-.crowd-fig::after {
-  content: '';
-  position: absolute;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-[data-level="warm"]    .crowd-fig { background: rgba(30, 16, 55, 0.95); }
-[data-level="excited"] .crowd-fig { background: rgba(50, 20, 80, 1); animation-duration: calc(0.5s - var(--energy, 0) * 0.1s); }
-[data-level="hyped"]   .crowd-fig { background: rgba(80, 30, 130, 1); filter: drop-shadow(0 -2px 4px rgba(140, 60, 255, 0.5)); }
-[data-level="star"]    .crowd-fig {
-  background: rgba(140, 80, 255, 1);
-  filter: drop-shadow(0 -4px 8px rgba(200, 140, 255, 0.7));
-  animation-duration: 0.25s;
-}
-
-@keyframes crowd-bob {
-  0%, 100% { transform: scaleY(1) translateY(0); }
-  50%       { transform: scaleY(1.18) translateY(-4px); }
-}
 
 /* ── Touch buttons ───────────────────────────────────────────────────────── */
 #touch-zone {

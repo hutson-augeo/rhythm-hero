@@ -27,9 +27,9 @@ export class Game {
 
   // ── Setup ──────────────────────────────────────────────────────────────────
 
-  initHighway(canvas, crowdContainer) {
+  initHighway(canvas) {
     this.highway = new Highway(canvas)
-    this.crowd   = new CrowdEngine(this.audio, crowdContainer)
+    this.crowd   = new CrowdEngine(this.audio)
   }
 
   registerTouchButtons(buttons) {

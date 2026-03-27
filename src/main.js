@@ -6,10 +6,9 @@ const game = new Game(ui)
 
 // ── Wire up highway canvas ────────────────────────────────────────────────────
 const canvas   = document.getElementById('highway-canvas')
-const crowd    = document.getElementById('crowd')
 const touchBtns = [...document.querySelectorAll('.touch-btn')]
 
-game.initHighway(canvas, crowd)
+game.initHighway(canvas)
 game.registerTouchButtons(touchBtns)
 
 // ── Audio source buttons ──────────────────────────────────────────────────────
