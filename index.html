@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rhythm Game</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="hud">
+    <div><span>SCORE </span><strong id="score">0</strong></div>
+    <div><span>COMBO </span><strong id="combo">0</strong></div>
+    <div><span>MISS </span><strong id="misses">0</strong></div>
+  </div>
+
+  <div id="combo-display"></div>
+
+  <div id="stage">
+    <!-- lanes injected by game.js -->
+  </div>
+
+  <p id="instructions">Keys&nbsp;&nbsp;<strong>1 &nbsp; 2 &nbsp; 3 &nbsp; 4 &nbsp; 5</strong></p>
+
+  <!-- Start / Game-over overlay -->
+  <div id="overlay">
+    <h1 id="overlay-title">RHYTHM</h1>
+    <p id="overlay-msg">Hit the notes as they reach the line.</p>
+    <button id="start-btn">START</button>
+    <p style="color:#555;font-size:12px;margin-top:8px;letter-spacing:1px;">Keys 1 – 5 &nbsp;|&nbsp; BPM 120</p>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
