@@ -7,8 +7,7 @@ export class InputManager {
     this._touchBtns   = []
     this._active      = false
 
-    this._onKey   = this._onKey.bind(this)
-    this._onTouch = this._onTouch.bind(this)
+    this._onKey = this._onKey.bind(this)
   }
 
   enable() {
