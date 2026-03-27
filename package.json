@@ -1,0 +1,11 @@
+{
+  "name": "rhythm-hero",
+  "version": "0.2.0",
+  "description": "Guitar Hero-style browser rhythm game — beats driven by system audio",
+  "scripts": {
+    "dev":   "npx serve . --listen 3000",
+    "start": "npx serve . --listen 3000"
+  },
+  "keywords": ["rhythm", "game", "guitar-hero", "web-audio"],
+  "license": "MIT"
+}

@@ -1,82 +1,133 @@
-# Rhythm Game — CLAUDE.md
+# Rhythm Hero — CLAUDE.md
 
 ## Project Overview
-A browser-based rhythm game using keys 1–5. Notes fall in 5 lanes; hit them as they reach the judgment line to score points. Built with vanilla HTML/CSS/JS and the Web Audio API (no dependencies).
+Guitar Hero-style browser rhythm game. Works on desktop, mobile, and tablet.
+Audio source is whatever is playing on the device (system audio or microphone) — the game does real-time beat detection and generates notes from it.
 
-## Current State (v0.1)
-- Single HTML file + JS + CSS (no build step)
-- 5 lanes, keys 1–5
-- Web Audio API for procedurally generated hit sounds (no audio files needed)
-- Score, combo, and miss tracking
-- Auto-generated note patterns that loop
+## Running
+```bash
+npm run dev     # starts at http://localhost:3000
+# or
+npx serve . --listen 3000
+```
+> Must be served (not opened as file://) — ES modules require HTTP.
 
 ## Architecture
 
 ```
-rhythm-game/
-├── index.html        # Entry point
-├── style.css         # Layout, lanes, notes, animations
-├── game.js           # Game loop, input, scoring, audio
-└── CLAUDE.md         # This file
+rhythm-hero/
+├── index.html              # Shell — all screens declared here
+├── package.json
+├── CLAUDE.md
+├── src/
+│   ├── main.js             # Entry point — wires all systems, handles button events
+│   ├── config.js           # All constants: difficulties, lane colors, scoring, freq bands
+│   ├── AudioEngine.js      # MediaStream capture, AnalyserNode, beat detection, sound synthesis
+│   ├── Highway.js          # Canvas renderer — perspective highway, notes, particles, hit zone
+│   ├── NoteManager.js      # Note lifecycle: spawn, update progress, tryHit, auto-miss
+│   ├── InputManager.js     # Keyboard (1–5, Space) + touch button event routing
+│   ├── ScoreSystem.js      # Score, combo, multiplier, star power meter
+│   ├── CrowdEngine.js      # Crowd audio synthesis + CSS crowd animation energy
+│   ├── Game.js             # Orchestrator — state machine, game loop (RAF)
+│   └── UI.js               # DOM manipulation: menus, HUD updates, banners, game-over
+└── styles/
+    └── main.css            # All styles — menu, HUD, highway, crowd, overlays, touch buttons
 ```
 
 ## Core Systems
 
-### Game Loop (`game.js`)
-- `requestAnimationFrame` loop drives note position updates
-- Notes are objects: `{ lane, y, hit, missed, el }`
-- Note speed controlled by `NOTE_SPEED` constant (px/frame)
-- Pattern scheduler fires new notes on a beat interval
+### Audio Capture (`AudioEngine.js`)
+- Desktop Chrome: `getDisplayMedia({ audio:true, video:true })` captures system/tab audio
+- Fallback: `getUserMedia({ audio:true })` for microphone
+- Audio stream → `AnalyserNode` (FFT size 2048) → NOT connected to output (no feedback)
 
-### Audio (`game.js → AudioContext`)
-- Web Audio API — no files needed
-- Each lane (1–5) plays a different pitched tone on hit
-- Miss plays a low buzz
-- Beat metronome tick (optional, toggleable)
+### Beat Detection (`AudioEngine.getBeats()`)
+- Divides FFT into 5 frequency bands (sub-bass → hi-hat), one per lane
+- Per-band rolling energy history (35 frames)
+- Beat fires when: `energy > avg * sensitivity AND energy > 18 AND gap > MIN_NOTE_GAP`
+- `sensitivity` is per-difficulty (higher = fewer notes)
 
-### Scoring
-- Perfect hit (within ±20px of line): 300 pts + combo multiplier
-- Good hit (within ±50px): 100 pts
-- Miss: combo reset
+### Highway Renderer (`Highway.js`)
+- Canvas fills `#highway-wrap` container (ResizeObserver for responsive resize)
+- Perspective math: vanishing point at `(W/2, H*0.06)`, hit zone at `y = H*0.82`
+- Notes drawn as rounded-rect gems with highlight stripe and glow shadow
+- Hit zone: 5 colored circles with radial gradient fill, key labels
+- Particles: gravity-affected sparks (20 for PERFECT, 10 for GOOD, white burst for PERFECT)
+- Scrolling horizontal grid bars create depth illusion
 
-## Planned Scaling Milestones
+### Note Lifecycle (`NoteManager.js`)
+- Note `progress` = `(now - spawnTime) / travelTime` (0=top, 1=hit zone)
+- `tryHit(lane, nowMs)`: finds closest note, checks `|now - targetTime| <= perfectMs/goodMs`
+- Auto-miss: note is missed when `now - targetTime > goodMs * 1.6`
 
-### v0.2 — Polish
-- [ ] Visual feedback (flash on hit/miss, lane highlights)
-- [ ] Difficulty selector (slow / normal / fast)
-- [ ] Song timer + end screen with grade (S/A/B/C/F)
+### Scoring (`ScoreSystem.js`)
+- PERFECT: 300 pts, GOOD: 100 pts
+- Multiplier: `min(4, 1 + floor(combo / 10))` — updates at 10/20/30/40 combo
+- Star Power: fills 5.5% per PERFECT (18 perfects = full), drains at 14%/s when active
+- Activation: Spacebar / `InputManager.onActivate` → 2× score multiplier
+- `hitStates[lane]` decays 0→1 at 8/s for hit zone glow
 
-### v0.3 — Audio
-- [ ] Load custom audio files (MP3/OGG) via drag-and-drop or file picker
-- [ ] Beat-sync: detect BPM from audio and align note generation
-- [ ] Per-lane sound customization
+### Crowd (`CrowdEngine.js`)
+- 36 CSS `crowd-fig` divs in `#crowd`, animated by `@keyframes crowd-bob`
+- Animation speed and glow controlled by `data-level` attribute on container
+- Energy levels: neutral → warm → excited → hyped → star
+- Auto-cheer fires on every 10-combo milestone
+- Auto-boo fires on 5 consecutive misses with zero combo
 
-### v0.4 — Content
-- [ ] Song/pattern editor (click to place notes, export JSON)
-- [ ] Bundled pattern files (`patterns/*.json`)
-- [ ] Pattern loader from URL hash (`#pattern=my-song`)
+## Difficulty Modes
 
-### v0.5 — Persistence
-- [ ] LocalStorage high scores per pattern
-- [ ] Replay system (record keypresses + timestamps, replay for ghost)
+| Mode   | Travel Time | Perfect Window | Sensitivity | Max Lanes |
+|--------|-------------|----------------|-------------|-----------|
+| EASY   | 1800ms      | ±80ms          | 1.55        | 3         |
+| MEDIUM | 1300ms      | ±60ms          | 1.35        | 4         |
+| HARD   | 950ms       | ±45ms          | 1.18        | 5         |
+| GOD    | 620ms       | ±28ms          | 1.06        | 5         |
+
+## Grading
+- **S**: accuracy ≥95% and ≤3 misses
+- **A**: accuracy ≥85%
+- **B**: accuracy ≥70%
+- **C**: accuracy ≥50%
+- **F**: below 50%
+
+## Mobile / Touch
+- `#touch-zone`: row of 5 colored buttons at bottom (height 60–90px)
+- `touchstart` (passive:false, preventDefault) for responsiveness
+- Buttons 1–5 hidden when fewer lanes selected
+- Viewport meta: no zoom, no user-scale
+- Star Power on mobile: ??? (TODO: double-tap or shake gesture)
+
+## Scaling Roadmap
+
+### v0.3 — Feel & Juice
+- [ ] Screen shake on miss (CSS transform on `#highway-wrap`)
+- [ ] Highway flash/strobe on star power activation
+- [ ] Note hold/sustain mechanics
+- [ ] Mobile star power: accelerometer shake detection
+
+### v0.4 — Audio Improvements
+- [ ] BPM auto-detection from audio stream
+- [ ] Beat quantization (snap notes to nearest BPM grid)
+- [ ] Better beat detection using onset strength (spectral flux instead of energy ratio)
+- [ ] Per-lane audio source filtering (EQ bands for each lane's characteristic sound)
+
+### v0.5 — Content
+- [ ] Static pattern files (`patterns/*.json`) for play-along songs
+- [ ] In-game pattern editor
+- [ ] Song timer + HUD progress bar
+
+### v0.6 — Persistence
+- [ ] LocalStorage high scores
+- [ ] Ghost/replay system (record keypresses + ms timestamps)
 
 ### v1.0 — Build System
-- [ ] Add Vite for bundling
-- [ ] TypeScript migration
-- [ ] Component split: `AudioEngine`, `NoteRenderer`, `ScoreTracker`, `PatternLoader`
-- [ ] Unit tests for scoring logic
+- [ ] Migrate to Vite
+- [ ] TypeScript
+- [ ] Unit tests for `ScoreSystem`, `NoteManager`, beat detection
+- [ ] PWA manifest + service worker (offline play)
 
-## Development Notes
-- Keep zero dependencies until v1.0 build-system milestone
-- Web Audio `AudioContext` must be resumed on first user gesture (browser policy)
-- Note hit detection runs in the game loop — keep it O(n) where n = visible notes
-- CSS transforms (translateY) are used for note movement — avoids layout thrash
-
-## Running Locally
-```bash
-# Any static file server works:
-npx serve .
-# or
-python3 -m http.server 8080
-# then open http://localhost:8080
-```
+## Known Limitations / Notes
+- System audio capture (`getDisplayMedia`) requires Chrome on desktop; Firefox/Safari may need mic fallback
+- Web Audio `AudioContext` must be resumed after user gesture (handled by `selectSource`)
+- Note generation only works when audio source is active and playing — silence = no notes
+- `getDisplayMedia` on some Chrome versions requires `video:true` even if you only want audio; video track is stopped immediately after capture

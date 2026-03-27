@@ -2,34 +2,147 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rhythm Game</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Rhythm Hero</title>
+  <link rel="stylesheet" href="styles/main.css" />
 </head>
 <body>
 
+<!-- ══════════════════════════════════════════════════════════════════════════
+     MENU SCREEN
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="menu" class="screen">
+  <div class="menu-glow"></div>
+
+  <header class="menu-header">
+    <h1 class="logo">RHYTHM<span>HERO</span></h1>
+    <p class="tagline">shred it.</p>
+  </header>
+
+  <section class="menu-section">
+    <h2>AUDIO SOURCE</h2>
+    <p class="hint">Pick what's playing on your device — the game reads the beat from it.</p>
+    <div class="btn-row">
+      <button id="btn-mic"    class="src-btn">🎤 Microphone</button>
+      <button id="btn-system" class="src-btn">🔊 System Audio</button>
+    </div>
+    <div id="audio-status" class="status">No audio source selected</div>
+  </section>
+
+  <section class="menu-section">
+    <h2>DIFFICULTY</h2>
+    <div class="btn-row">
+      <button data-diff="easy"   class="diff-btn easy">EASY</button>
+      <button data-diff="medium" class="diff-btn medium selected">MEDIUM</button>
+      <button data-diff="hard"   class="diff-btn hard">HARD</button>
+      <button data-diff="god"    class="diff-btn god">GOD</button>
+    </div>
+  </section>
+
+  <section class="menu-section">
+    <h2>LANES (keys 1 – 5)</h2>
+    <div class="btn-row">
+      <button data-lanes="1" class="lane-btn">1</button>
+      <button data-lanes="2" class="lane-btn">2</button>
+      <button data-lanes="3" class="lane-btn">3</button>
+      <button data-lanes="4" class="lane-btn">4</button>
+      <button data-lanes="5" class="lane-btn selected">5</button>
+    </div>
+  </section>
+
+  <button id="btn-play" class="play-btn" disabled>▶ PLAY</button>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     GAME SCREEN
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="game" class="screen hidden">
+
+  <!-- HUD top bar -->
   <div id="hud">
-    <div><span>SCORE </span><strong id="score">0</strong></div>
-    <div><span>COMBO </span><strong id="combo">0</strong></div>
-    <div><span>MISS </span><strong id="misses">0</strong></div>
+    <div class="hud-left">
+      <div class="hud-block">
+        <span class="hud-label">SCORE</span>
+        <span id="hud-score" class="hud-val">0</span>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">COMBO</span>
+        <span id="hud-combo" class="hud-val">0</span>
+      </div>
+    </div>
+
+    <!-- Star Power meter -->
+    <div id="star-bar">
+      <div class="star-label">★ STAR POWER <span class="star-hint">[SPACE]</span></div>
+      <div class="star-track">
+        <div id="star-fill"></div>
+      </div>
+    </div>
+
+    <div class="hud-right">
+      <div class="hud-block">
+        <span class="hud-label">MULT</span>
+        <span id="hud-mult"  class="hud-val">×1</span>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">MISS</span>
+        <span id="hud-misses" class="hud-val">0</span>
+      </div>
+    </div>
   </div>
 
-  <div id="combo-display"></div>
+  <!-- Highway canvas -->
+  <div id="highway-wrap">
+    <canvas id="highway-canvas"></canvas>
 
-  <div id="stage">
-    <!-- lanes injected by game.js -->
+    <!-- Per-lane judgment text (positioned over hit zone) -->
+    <div id="lane-labels"></div>
+
+    <!-- Crowd strip behind the highway -->
+    <div id="crowd" data-level="neutral"></div>
   </div>
 
-  <p id="instructions">Keys&nbsp;&nbsp;<strong>1 &nbsp; 2 &nbsp; 3 &nbsp; 4 &nbsp; 5</strong></p>
-
-  <!-- Start / Game-over overlay -->
-  <div id="overlay">
-    <h1 id="overlay-title">RHYTHM</h1>
-    <p id="overlay-msg">Hit the notes as they reach the line.</p>
-    <button id="start-btn">START</button>
-    <p style="color:#555;font-size:12px;margin-top:8px;letter-spacing:1px;">Keys 1 – 5 &nbsp;|&nbsp; BPM 120</p>
+  <!-- Touch buttons (mobile) -->
+  <div id="touch-zone">
+    <button class="touch-btn" style="--col:#3be068" data-lane="0">1</button>
+    <button class="touch-btn" style="--col:#ff3355" data-lane="1">2</button>
+    <button class="touch-btn" style="--col:#ffe040" data-lane="2">3</button>
+    <button class="touch-btn" style="--col:#33aaff" data-lane="3">4</button>
+    <button class="touch-btn" style="--col:#ff9900" data-lane="4">5</button>
   </div>
 
-  <script src="game.js"></script>
+  <!-- Floating overlays -->
+  <div id="combo-banner" aria-live="polite"></div>
+  <div id="star-banner">★ STAR POWER ACTIVATED ★</div>
+
+  <!-- Stop button -->
+  <button id="btn-stop" class="stop-btn">✕ QUIT</button>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     GAME OVER SCREEN
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="game-over" class="screen hidden">
+  <div class="over-card">
+    <div id="over-grade" class="over-grade">S</div>
+    <h2>FINAL SCORE</h2>
+
+    <div class="stat-grid">
+      <div class="stat"><span class="slabel">SCORE</span>   <span id="over-score"  class="sval">0</span></div>
+      <div class="stat"><span class="slabel">MAX COMBO</span><span id="over-combo"  class="sval">0</span></div>
+      <div class="stat"><span class="slabel">ACCURACY</span> <span id="over-acc"    class="sval">0%</span></div>
+      <div class="stat"><span class="slabel">MISSES</span>   <span id="over-misses" class="sval">0</span></div>
+    </div>
+
+    <div class="btn-row" style="margin-top:24px">
+      <button id="btn-retry" class="play-btn small">↺ RETRY</button>
+      <button id="btn-menu"  class="play-btn small outline">MENU</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
 </body>
 </html>
